@@ -62,6 +62,28 @@ class LoginValidator extends LinValidator {
     this.password = new Rule('isNotEmpty', '密码不可为空');
   }
 }
+/**
+ * 获取账户列表
+ * 
+ */
+class GetUsersValidator extends LinValidator {
+  constructor () {
+    super();
+    this.group_id = [
+      new Rule('isNotEmpty', 'group_id不能为空'),
+      new Rule('isInt','group_id为正整数',{min:1})
+    ];
+    this.page = [
+      new Rule('isNotEmpty', 'page不能为空'),
+      new Rule('isInt','page为正整数',{min:1})
+    ];
+    this.count = [
+      new Rule('isNotEmpty', 'count不能为空'),
+      new Rule('isInt','count为正整数',{min:1})
+    ];
+  }
+  
+}
 
 /**
  * 更新用户信息
@@ -128,5 +150,6 @@ export {
   UpdateInfoValidator,
   LoginValidator,
   RegisterValidator,
-  AvatarUpdateValidator
+  AvatarUpdateValidator,
+  GetUsersValidator
 };

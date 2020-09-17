@@ -3,11 +3,14 @@ import {
   RegisterValidator,
   LoginValidator,
   UpdateInfoValidator,
-  ChangePasswordValidator
+  ChangePasswordValidator,
+  GetUsersValidator
 } from '../validator/user';
-import { UserDao } from '../dao/user';
+
 
 import {UserIdentityModel, UserModel} from '../model/account/user';
+import { UserDao } from '../dao/user';
+import { RepeatException, generate, NotFound, Forbidden } from 'lin-mizar';
 
 class UserController {
 
@@ -26,32 +29,70 @@ class UserController {
     });
   }
 
-  static async getAccounts(ctx) {}
-
+  /*
+  *创建用户
+  * 
+  * */
   static async createAccount(ctx) {
     const v = await new RegisterValidator().validate(ctx);
    
     let user = await UserModel.findOne({
       where: {
-        username: v.get('body.username')
+        email: v.get('body.email')
       }
     });
     
     if (user) {
       throw new RepeatException({
-        code: 10071
+        code: 10076
       });
     }
     const userDao = new UserDao();
-    const value_test= await userDao.createUser(v);
-    console.log(value_test);
-    ctx.success({
-      code: 11
-    });
-
+    const registerResult = await userDao.createUser(v);
+    if(registerResult){
+      ctx.success({
+        code: 11
+      });
+    }else{
+      throw new RepeatException({
+        code: 10200
+      });
+    }
+   
   }
+  /*
+  *账号列表
+  *参数：group_id,page,count
+  */
+ static async getAccounts(ctx){
+  const v = await new GetUsersValidator().validate(ctx);
+  const userDao = new UserDao();
+  const { users, total } = await userDao.getUsers(
+    v.get('body.group_id'),
+    v.get('body.page'),
+    v.get('body.count')
+  );
+  ctx.json({
+    items: users,
+    total,
+    count:v.get('body.count'),
+    page:v.get('body.page')
+  });
+ }
 
-  static async editAccount(ctx) {}
+ /**
+  * 更新账户信息
+  * @param {*} ctx 
+  */
+
+  static async editAccount(ctx) {
+    const v = await new UpdateInfoValidator().validate(ctx);
+    const userDao = new UserDao();
+    await userDao.updateUser(ctx, v);
+    ctx.success({
+      code: 6
+    });
+  }
 
   static async changeAccount(ctx) {}
 

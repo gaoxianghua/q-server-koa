@@ -1,6 +1,6 @@
 import { LinRouter, NotFound, disableLoading } from 'lin-mizar';
 import { groupRequired, loginRequired } from '../../middleware/jwt';
-import { UserController } from '../../controller/userController';
+import { UserController } from '../../controller/userController'
 
 //user 路由实例
 const userApi = new LinRouter({
@@ -64,7 +64,7 @@ return:
 userApi.linPost('createAccount',
                   '/',
                   userApi.permission('创建账户'),
-                  //groupRequired,
+                  groupRequired,
                   UserController.createAccount)
 /* 账户编辑
 param：
@@ -136,7 +136,7 @@ return:
 }
 */
 userApi.linPost('modifyPassword',
-  '/password/modify',
+                '/password/modify',
                 userApi.permission('密码修改'),
                 loginRequired,
                 UserController.modifyPassword)

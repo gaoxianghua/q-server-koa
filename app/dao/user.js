@@ -51,7 +51,7 @@ class UserDao {
         });
       }
     }
-    await this.registerUser(v);
+    return await this.registerUser(v);
   }
 
   async updateUser (ctx, v) {
@@ -171,7 +171,10 @@ class UserDao {
     try {
       transaction = await sequelize.transaction();
       const user = {
-        username: v.get('body.username')
+        username: v.get('body.username'),
+        phone: v.get('body.phone'),
+        password: v.get('body.password'),
+        avatar: v.get('body.avatar'),
       };
       if (v.get('body.email') && v.get('body.email').trim() !== '') {
         user.email = v.get('body.email');
@@ -190,7 +193,6 @@ class UserDao {
           transaction
         }
       );
-
       const groupIds = v.get('body.group_ids');
       if (groupIds && groupIds.length > 0) {
         for (const id of v.get('body.group_ids') || []) {
@@ -219,8 +221,58 @@ class UserDao {
       await transaction.commit();
     } catch (error) {
       if (transaction) await transaction.rollback();
+      return false;
     }
     return true;
+  }
+  /****
+   * 账户列表
+   */
+  async getUsers (groupId, page, count1) {
+    let userIds = [];
+    const condition = {
+      where: {
+        username: {
+          [Op.ne]: 'root'
+        }
+      },
+      offset: page * count1,
+      limit: count1
+    };
+    if (groupId) {
+      const userGroup = await UserGroupModel.findAll({
+        where: {
+          group_id: groupId
+        }
+      });
+      userIds = userGroup.map(v => v.user_id);
+      set(condition, 'where.id', {
+        [Op.in]: userIds
+      });
+    }
+    const { rows, count } = await UserModel.findAndCountAll(condition);
+
+    for (const user of rows) {
+      const userGroup = await UserGroupModel.findAll({
+        where: {
+          user_id: user.id
+        }
+      });
+      const groupIds = userGroup.map(v => v.group_id);
+      const groups = await GroupModel.findAll({
+        where: {
+          id: {
+            [Op.in]: groupIds
+          }
+        }
+      });
+      set(user, 'groups', groups);
+    }
+
+    return {
+      users: rows,
+      total: count
+    };
   }
 
   formatPermissions (permissions) {
